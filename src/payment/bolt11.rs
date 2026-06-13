@@ -102,6 +102,7 @@ impl Bolt11Payment {
 	/// node-wide parameters configured via [`Config::route_parameters`] on a per-field basis.
 	pub fn send(
 		&self, invoice: &Bolt11Invoice, route_parameters: Option<RouteParametersConfig>,
+		payment_timeout_secs: Option<u64>,
 	) -> Result<PaymentId, Error> {
 		if !*self.is_running.read().unwrap() {
 			return Err(Error::NotRunning);
@@ -121,8 +122,9 @@ impl Bolt11Payment {
 
 		let route_parameters =
 			route_parameters.or(self.config.route_parameters).unwrap_or_default();
-		let retry_strategy =
-			Retry::Timeout(Duration::from_secs(self.config.payment_retry_timeout_secs));
+		let retry_strategy = Retry::Timeout(Duration::from_secs(
+			payment_timeout_secs.unwrap_or(self.config.payment_retry_timeout_secs),
+		));
 		let payment_secret = Some(*invoice.payment_secret());
 
 		match self.channel_manager.pay_for_bolt11_invoice(
@@ -203,7 +205,7 @@ impl Bolt11Payment {
 	/// node-wide parameters configured via [`Config::route_parameters`] on a per-field basis.
 	pub fn send_using_amount(
 		&self, invoice: &Bolt11Invoice, amount_msat: u64,
-		route_parameters: Option<RouteParametersConfig>,
+		route_parameters: Option<RouteParametersConfig>, payment_timeout_secs: Option<u64>,
 	) -> Result<PaymentId, Error> {
 		if !*self.is_running.read().unwrap() {
 			return Err(Error::NotRunning);
@@ -232,8 +234,9 @@ impl Bolt11Payment {
 
 		let route_parameters =
 			route_parameters.or(self.config.route_parameters).unwrap_or_default();
-		let retry_strategy =
-			Retry::Timeout(Duration::from_secs(self.config.payment_retry_timeout_secs));
+		let retry_strategy = Retry::Timeout(Duration::from_secs(
+			payment_timeout_secs.unwrap_or(self.config.payment_retry_timeout_secs),
+		));
 		let payment_secret = Some(*invoice.payment_secret());
 
 		match self.channel_manager.pay_for_bolt11_invoice(
